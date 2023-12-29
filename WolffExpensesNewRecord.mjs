@@ -1,5 +1,23 @@
 // TODO stub out input.config to grab
+let baseUrl = 'https://github.com/JaredVogt/airtable/blob/main/' 
+let fileUrl = 'WolffExpensesNewRecord.js'
+let fullUrl = `${baseUrl}${fileUrl}`
 
+// Function to test that code below is spitting out what is expected
+async function fetch(hook, therest) {
+  console.log(hook)
+  console.log(therest)
+}
+
+// Create input.config for testing
+let input = {
+  config: () => ({
+    user: 'user',
+    vendor: 'vendor',
+    description: 'description',
+    amount: 'amount'
+  })
+}
 
 // --------------- everything below here, copy into airtable
 let config = input.config()

@@ -1,6 +1,34 @@
-// TODO stub out input.config to grab
+/**
+This is an example of code to use in an Airtable Automation to send data to a Make Webhook.
+* Only copy the code below the line into Airtable
+* The code at the top allows for testing that this file is working as expected
+* `input` has to be set up to mimic the properties that Airtable will pass when input.config() is called
+* Match this up with what is in Airtable config
+* `node <filename>` will show you what is being sent to airtable.
+**/
+let baseUrl = 'https://github.com/JaredVogt/airtable/blob/main/' 
+let fileUrl = 'exampleMakeSMS.mjs'
+let fullUrl = `${baseUrl}${fileUrl}`
 
-// --------------- everything below here, copy into airtable
+// Function to test that code below is spitting out what is expected
+async function fetch(hook, therest) {
+  console.log(`Github location: ${fullUrl})`
+  console.log(hook)
+  console.log(therest)
+}
+
+// Create input.config for testing - NOTE: THIS IS SPECIFIC TO EACH USECASE
+let input = {
+  config: () => ({
+    user: 'user',
+    vendor: 'vendor',
+    description: 'description',
+    amount: 'amount'
+  })
+}
+
+// --------------- everything below here, copy into airtable ----------------------------
+// Github Source: https://github.com/JaredVogt/airtable/blob/main/exampleMakeSMS.mjs
 let config = input.config()
 
 // Setup config for Make
