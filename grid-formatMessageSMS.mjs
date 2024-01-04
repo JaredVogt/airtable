@@ -3,13 +3,13 @@ Script that is called by "New Record" trigger in Grid base. It formats a message
 **/
 
 // Housekeeping for github
-let baseUrl = 'https://github.com/JaredVogt/airtable/blob/main/' 
-let fileUrl = 'grid-formatMessageSMS.mjs'
-let fullUrl = `${baseUrl}${fileUrl}`
+const baseUrl = 'https://github.com/JaredVogt/airtable/blob/main/' 
+const fileUrl = 'grid-formatMessageSMS.mjs'
+const fullUrl = `${baseUrl}${fileUrl}`
 
 //  --------------- Testing ------------------------------------------------------------
 // Create input.config for testing - NOTE: THIS IS SPECIFIC TO EACH USECASE
-let input = {
+const input = {
   config: () => ({
     description: "Monthly pool Dec ",
     ID: "recRb3gud3e4zffok",
@@ -30,55 +30,63 @@ let input = {
 }
 
 // Echo output.set() for testing
-let output = {
+const output = {
   set: (key, value) =>
     console.log(`Output: ${key}, ${value}`)
 }
 
 // --------------- COPY EVERYTHING BELOW LINE INTO AIRTABLE SCRIPT --------------------
 // Github Source: https://github.com/JaredVogt/airtable/blob/main/grid-formatMessageSMS.mjs
-let P = console.log
+const P = console.log
 
 // Format date to match Airtable (adjusted to PST)
 function formatDate(dateString) {
-    const date = new Date(dateString);
-    const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-    const pstOffset = 8 * 60 * 60000; // PST is UTC-8
-    const pstDate = new Date(utcDate.getTime() - pstOffset);
-    let year = pstDate.getFullYear();
-    let month = (pstDate.getMonth() + 1).toString().padStart(2, '0');
-    let day = pstDate.getDate().toString().padStart(2, '0');
-    let newDate = `${year}-${month}-${day}`;
+    const date = new Date(dateString)
+    const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000)
+    const pstOffset = 8 * 60 * 60000 // PST is UTC-8
+    const pstDate = new Date(utcDate.getTime() - pstOffset)
+    const year = pstDate.getFullYear()
+    const month = (pstDate.getMonth() + 1).toString().padStart(2, '0')
+    const day = pstDate.getDate().toString().padStart(2, '0')
+    const newDate = `${year}-${month}-${day}`
     return newDate
 }
 
-let config = input.config()  // see format in input above - MUST MATCH Airtable
+const inData = input.config()  // test format in input above - MUST MATCH Airtable
 
 // Setup app specific data
-let smsNumber = '+15075937399'  // FIXME this should be looked up from a table
-let destinationNumber = '+12066615101'
+const smsNumber = '+15075937399'  // FIXME this should be looked up from a table
+const destinationNumber = '+12066615101'
 
 // Used by conditional logic in next step in Airtable automation to abort automation
-if () {
+if (inData.action === "Paid") {
   output.set('execute', 'false')
 }
 
+// return only if the values are the same. The point here is to add Urgent to the message
+const isDueToday = (dueDate) => {
+  return dueDate === formatDate(new Date())
+}
+
 // Construct the SMS message  
-// FIXME ChatGPT - https://chat.openai.com/c/d0c668f9-af84-409c-82d0-bab72282417a
-let message = ''
-if (config.dueDate === formatDate(Date())) {
-  message += `URGENT*******\n`
-}  
-if (config.contact) {message += `${config.contact}\n`}
-if (config.amount) {message += `${config.amount} / ${config.method} / ${config.paymentAccount}\n`}
-if (config.action) {message += `Action: ${config.action}\n`}
-if (config.methodDetails) {message += `Details: ${config.methodDetails}\n`}
-if (config.methodOverride) {message += `Method: ${config.methodOverride}\n`}
-if (config.ID) {message += `${config.baseURL}\n`}
-message += '-----\n'
-if (config.house) {message += `House: ${config.house}\n`}
-if (config.business) {message += `Business: ${config.business}\n`}
-if (config.category) {message += `Category: ${config.category}\n`}
+const inDataEntries = [
+  {condition: isDueToday(inData.dueDate), value: 'URGENT*******'},
+  {condition: inData.contact, value: inData.contact},
+  {condition: inData.amount, value: `${inData.amount} / ${inData.method} / ${inData.paymentAccount}`},
+  {condition: inData.action, value: `Action: ${inData.action}`},
+  {condition: inData.methodDetails, value: `Details: ${inData.methodDetails}`},
+  {condition: inData.methodOverride, value: `Method: ${inData.methodOverride}`},
+  {condition: inData.ID, value: inData.baseURL},
+  {condition: true, value: '-----'},
+  {condition: inData.house, value: `House: ${inData.house}`},
+  {condition: inData.business, value: `Business: ${inData.business}`},
+  {condition: inData.category, value: `Category: ${inData.category}`}
+]
+
+let message = inDataEntries
+  .filter(entry => entry.condition)
+  .map(entry => entry.value)
+  .join('\n')
 
 // Finish creating output object
 output.set('smsNumber', smsNumber)
