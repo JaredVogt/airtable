@@ -39,6 +39,25 @@ const output = {
 // Github Source: https://github.com/JaredVogt/airtable/blob/main/grid-formatMessageSMS.mjs
 const P = console.log
 
+// ---- Script specific input/output and data
+
+// Script specific data
+const smsNumber = '+15075937399'  // FIXME this should be looked up from a table
+const destinationNumber = '+12066615101'
+
+// Assign variables from input.config()
+const {house, contact, amount, method, paymentAccount, action, methodDetails, methodOverride, ID, baseURL, dueDate, business, category} = input.config()
+
+// create input.config object for downstream Actions (all variables must be set or Actions will fail) 
+function initializeOutput(execute) {
+  output.set('execute', execute)  // Stop and output false
+  output.set('smsNumber', null)
+  output.set('destinationNumber', null)
+  output.set('message', null)
+}
+
+// ---- Script specific functions
+
 // Format date to match Airtable (adjusted to PST)
 function formatDate(dateString) {
     const date = new Date(dateString)
@@ -52,45 +71,44 @@ function formatDate(dateString) {
     return newDate
 }
 
-const inData = input.config()  // test format in input above - MUST MATCH Airtable
-
-// Setup app specific data
-const smsNumber = '+15075937399'  // FIXME this should be looked up from a table
-const destinationNumber = '+12066615101'
-
-// Used by conditional logic in next step in Airtable automation to abort automation
-if (inData.action === "Paid") {
-  output.set('execute', 'false')
-}
-
-// return only if the values are the same. The point here is to add Urgent to the message
+// Return only if the date values are the same. The point here is to add Urgent to the message
 const isDueToday = (dueDate) => {
   return dueDate === formatDate(new Date())
 }
 
 // Construct the SMS message  
-const inDataEntries = [
-  {condition: isDueToday(inData.dueDate), value: 'URGENT*******'},
-  {condition: inData.contact, value: inData.contact},
-  {condition: inData.amount, value: `${inData.amount} / ${inData.method} / ${inData.paymentAccount}`},
-  {condition: inData.action, value: `Action: ${inData.action}`},
-  {condition: inData.methodDetails, value: `Details: ${inData.methodDetails}`},
-  {condition: inData.methodOverride, value: `Method: ${inData.methodOverride}`},
-  {condition: inData.ID, value: inData.baseURL},
-  {condition: true, value: '-----'},
-  {condition: inData.house, value: `House: ${inData.house}`},
-  {condition: inData.business, value: `Business: ${inData.business}`},
-  {condition: inData.category, value: `Category: ${inData.category}`}
-]
+function createMessage() {
+  const inDataEntries = [
+    {condition: isDueToday(dueDate), value: 'URGENT*******'},
+    {condition: contact, value: contact},
+    {condition: amount, value: `${amount} / ${method} / ${paymentAccount}`},
+    {condition: action, value: `Action: ${action}`},
+    {condition: methodDetails, value: `Details: ${methodDetails}`},
+    {condition: methodOverride, value: `Method: ${methodOverride}`},
+    {condition: ID, value: baseURL},
+    {condition: true, value: '-----'},
+    {condition: house, value: `House: ${house}`},
+    {condition: business, value: `Business: ${business}`},
+    {condition: category, value: `Category: ${category}`}
+  ]
 
-let message = inDataEntries
-  .filter(entry => entry.condition)
-  .map(entry => entry.value)
-  .join('\n')
+  // Add it all together
+  let message = inDataEntries
+    .filter(entry => entry.condition)
+    .map(entry => entry.value)
+    .join('\n')
 
-// Finish creating output object
-output.set('smsNumber', smsNumber)
-output.set('destinationNumber', destinationNumber)
-output.set('message', message)
+  // Finish creating output object
+  output.set('smsNumber', smsNumber)
+  output.set('destinationNumber', destinationNumber)
+  output.set('message', message)
+}
 
-// Twilio action will use output to send message
+// ---- MAIN 
+
+// Used by conditional logic in next step in Airtable automation to abort automation FIXME script could be stopped here
+if (action === "Paid" || action === "Autopaid") {
+  initializeOutput("false")
+} else {
+  createMessage() // Create the message
+}
