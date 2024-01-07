@@ -1,3 +1,4 @@
+// FIXME - this uses make and is deprecated - leaving here for reference
 // TODO stub out input.config to grab
 let baseUrl = 'https://github.com/JaredVogt/airtable/blob/main/' 
 let fileUrl = 'WolffExpensesNewRecord.js'

@@ -26,6 +26,7 @@ const input = {
     category: "Home Maintenance",
     action: "Paid",
     user: 'user',
+    createdByForm: 'Rainy'
   })
 }
 
@@ -46,15 +47,13 @@ const smsNumber = '+15075937399'  // FIXME this should be looked up from a table
 const destinationNumber = '+12066615101'
 
 // Assign variables from input.config()
-const {house, contact, amount, method, paymentAccount, action, methodDetails, methodOverride, ID, baseURL, dueDate, business, category} = input.config()
+const {house, contact, amount, method, paymentAccount, action, methodDetails, methodOverride, ID, baseURL, dueDate, business, category, createdByForm} = input.config()
 
 // create input.config object for downstream Actions (all variables must be set or Actions will fail) 
-function initializeOutput(execute) {
-  output.set('execute', execute)  // Stop and output false
-  output.set('smsNumber', null)
-  output.set('destinationNumber', null)
-  output.set('message', null)
-}
+output.set('execute', '')  // Stop and output false
+output.set('smsNumber', smsNumber)
+output.set('destinationNumber', destinationNumber)
+output.set('message', '')
 
 // ---- Script specific functions
 
@@ -72,14 +71,14 @@ function formatDate(dateString) {
 }
 
 // Return only if the date values are the same. The point here is to add Urgent to the message
-const isDueToday = (dueDate) => {
-  return dueDate === formatDate(new Date())
+const isDueTodayAndRainy = (dueDate) => {
+  return createdByForm === 'Rainy' && dueDate === formatDate(new Date())
 }
 
-// Construct the SMS message  
+// Construct the SMS message that will be passed along to Airtable SMS automation
 function createMessage() {
   const inDataEntries = [
-    {condition: isDueToday(dueDate), value: 'URGENT*******'},
+    {condition: isDueTodayAndRainy(dueDate), value: 'URGENT*******'},
     {condition: contact, value: contact},
     {condition: amount, value: `${amount} / ${method} / ${paymentAccount}`},
     {condition: action, value: `Action: ${action}`},
@@ -99,16 +98,14 @@ function createMessage() {
     .join('\n')
 
   // Finish creating output object
-  output.set('smsNumber', smsNumber)
-  output.set('destinationNumber', destinationNumber)
   output.set('message', message)
 }
 
 // ---- MAIN 
 
-// Used by conditional logic in next step in Airtable automation to abort automation FIXME script could be stopped here
+// Used by conditional logic in next step in Airtable automation to abort automation 
 if (action === "Paid" || action === "Autopaid") {
-  initializeOutput("false")
+  output.set('execute', "false")  // if "false", conditional logic aborts
 } else {
-  createMessage() // Create the message
+  createMessage()
 }
